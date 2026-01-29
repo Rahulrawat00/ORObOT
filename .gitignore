@@ -1,0 +1,5 @@
+whatsapp_profile/
+*.crx
+*.cache
+*.db
+*.log
