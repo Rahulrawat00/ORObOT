@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Signup</title>
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0b0f2a;
+    color:white;
+}
+
+/* NAVBAR */
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 40px;
+    background:#0f1535;
+    border-bottom:1px solid #1c2558;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+    color:#00e0ff;
+}
+
+.nav-links a{
+    text-decoration:none;
+    color:white;
+    margin-left:25px;
+    font-size:15px;
+}
+
+.signup-btn{
+    background:#00e0ff;
+    padding:8px 16px;
+    border-radius:20px;
+    color:#000 !important;
+}
+
+/* FORM */
+.form-box{
+    width:350px;
+    background:#161c40;
+    margin:80px auto;
+    padding:30px;
+    border-radius:12px;
+    box-shadow:0 0 30px #00e0ff30;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:12px 0;
+    background:#0f1535;
+    border:none;
+    color:white;
+    border-radius:6px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#00e0ff;
+    border:none;
+    border-radius:20px;
+    font-size:16px;
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">AI Assistant</div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/login">Login</a>
+        <a href="/signup" class="signup-btn">Signup</a>
+    </div>
+</div>
+
+<div class="form-box">
+    <h2>Signup</h2>
+    <form method="post" action="/signup">
+        <input name="name" placeholder="Name" required>
+        <input name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button>Signup</button>
+    </form>
+</div>
+</body>
+</html>
