@@ -1,261 +1,272 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>AI Assistant Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORObOT | Enterprise AI</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-:root {
-    --bg: #05070a;
-    --sidebar: #0a0d1a;
-    --card: rgba(255, 255, 255, 0.05);
-    --accent: #00e0ff;
-    --accent-glow: rgba(0, 224, 255, 0.3);
-    --user-bubble: #1c2558;
-    --ai-bubble: rgba(255, 255, 255, 0.08);
-    --text-main: #e0e0e0;
-    --text-dim: #7aa7c7;
-}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Outfit', sans-serif;
-}
+    <style>
+        :root {
+            --bg-app: #09090b;
+            --bg-sidebar: #000000;
+            --bg-panel: #121214;
+            --bg-message-user: #1f1f22;
+            --gold-primary: #D4AF37;
+            --gold-glow: rgba(212, 175, 55, 0.3);
+            --text-main: #ECECEC;
+            --text-muted: #A1A1AA;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+        }
 
-body {
-    background: var(--bg);
-    color: var(--text-main);
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-app); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
 
-/* SIDEBAR - Professional Layout */
-.sidebar {
-    width: 260px;
-    background: var(--sidebar);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-}
+        /* --- THREE.JS LANDING PAGE --- */
+        #landing-wrapper {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10000;
+            background: #000;
+            transition: opacity 1s ease-in-out, visibility 1s;
+            /* Initially hidden via JS if session exists */
+        }
 
-.logo {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 1px;
-    margin-bottom: 40px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+        #solar-canvas { width: 100%; height: 100%; display: block; }
 
-.logo-dot {
-    width: 12px;
-    height: 12px;
-    background: var(--accent);
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--accent);
-}
+        .landing-overlay-ui {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10001;
+            pointer-events: none;
+        }
 
-/* MAIN CONTENT */
-.app-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
+        .landing-overlay-ui h1 {
+            font-size: 4.5rem;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+        }
 
-.chat-window {
-    flex: 1;
-    overflow-y: auto;
-    padding: 40px 10%;
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
+        .start-btn {
+            pointer-events: auto;
+            margin-top: 30px;
+            padding: 18px 50px;
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold-primary);
+            border: 1px solid var(--gold-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 3px;
+            transition: 0.5s;
+            backdrop-filter: blur(5px);
+            text-transform: uppercase;
+        }
 
-/* RESPONSE STYLING */
-.response-container {
-    max-width: 850px;
-    margin: 0 auto;
-    width: 100%;
-}
+        .start-btn:hover {
+            background: var(--gold-primary);
+            color: black;
+            box-shadow: 0 0 50px var(--gold-glow);
+        }
 
-.bubble {
-    padding: 18px 24px;
-    border-radius: 20px;
-    line-height: 1.6;
-    max-width: 85%;
-    position: relative;
-    animation: fadeIn 0.4s ease-out;
-}
+        /* --- MAIN APP UI --- */
+        .sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; padding: 24px 16px; }
+        .main-area { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .chat-window { flex: 1; overflow-y: auto; padding: 40px 15%; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+        .message { display: flex; gap: 16px; width: 100%; max-width: 850px; margin: 0 auto; animation: fadeInUp 0.5s ease forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-.user-text {
-    align-self: flex-end;
-    background: var(--user-bubble);
-    border: 1px solid rgba(0, 224, 255, 0.2);
-    margin-left: auto;
-    border-bottom-right-radius: 4px;
-}
+        .msg-bubble { line-height: 1.6; font-size: 1rem; color: var(--text-main); }
+        .message.user { flex-direction: row-reverse; }
+        .message.user .msg-bubble { background: var(--bg-message-user); padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-subtle); }
 
-.ai-text {
-    align-self: flex-start;
-    background: var(--ai-bubble);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-bottom-left-radius: 4px;
-}
+        .input-area { padding: 20px 15% 40px; background: linear-gradient(to top, var(--bg-app) 70%, transparent); }
+        .input-wrapper { max-width: 850px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; }
+        .input-box { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 1rem; }
 
-.label {
-    font-size: 12px;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin-bottom: 8px;
-    display: block;
-    color: var(--accent);
-}
-
-/* INPUT SECTION - Fixed at bottom */
-.input-area {
-    padding: 30px 10%;
-    background: linear-gradient(transparent, var(--bg) 40%);
-}
-
-.input-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-    position: relative;
-    background: var(--card);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    backdrop-filter: blur(20px);
-    transition: 0.3s;
-}
-
-.input-wrapper:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 20px var(--accent-glow);
-}
-
-.input-box {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: white;
-    padding: 12px 20px;
-    font-size: 16px;
-    outline: none;
-}
-
-/* BUTTONS */
-.icon-btn {
-    background: var(--accent);
-    color: #000;
-    border: none;
-    width: 45px;
-    height: 45px;
-    border-radius: 18px;
-    cursor: pointer;
-    font-weight: 700;
-    transition: 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.icon-btn:hover {
-    transform: scale(1.05);
-    filter: brightness(1.2);
-}
-
-.speak-btn {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    margin-right: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* CENTER DECORATION (The Pulse) */
-.pulse-bg {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-    z-index: -1;
-    opacity: 0.5;
-}
-</style>
+        .listening-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    </style>
 </head>
-
 <body>
 
-<div class="sidebar">
-    <div class="logo">
-        <div class="logo-dot"></div>
-        AI ASSISTANT
-    </div>
-    <div style="color: var(--text-dim); font-size: 14px;">Recent Chats</div>
-    </div>
-
-<div class="app-container">
-    <div class="pulse-bg"></div>
-
-    <div class="chat-window">
-        {% if speech_text %}
-        <div class="bubble user-text">
-            <span class="label">You</span>
-            {{ speech_text }}
-        </div>
-        
-        <div class="bubble ai-text">
-            <span class="label">Assistant</span>
-            {{ answer }}
-        </div>
-        {% else %}
-        <div style="text-align: center; margin-top: 15vh;">
-            <h1 style="font-size: 3rem; margin-bottom: 10px;">How can I help you?</h1>
-            <p style="color: var(--text-dim);">Ask me to send a message, search, or just chat.</p>
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="input-area">
-        <div class="input-wrapper">
-            <form action="/listen" method="post">
-                <button class="icon-btn speak-btn" type="submit" title="Speak Now"><i class="fa-solid fa-microphone"></i></button>
-            </form>
-
-            <form action="/send" method="post" style="flex: 1; display: flex;">
-                <input
-                    type="text"
-                    name="command"
-                    class="input-box"
-                    placeholder="Message AI Assistant..."
-                    required
-                >
-                <button class="icon-btn" type="submit"><i class="fa-solid fa-arrow-right"></i></button>
-            </form>
+    <div id="landing-wrapper">
+        <canvas id="solar-canvas"></canvas>
+        <div class="landing-overlay-ui">
+            <h1>ORObOT</h1>
+            <p style="color: #888; letter-spacing: 5px;">ENTERPRISE INTELLIGENCE V3</p>
+            <button class="start-btn" onclick="startApp()">INITIALIZE SYSTEM</button>
         </div>
     </div>
-</div>
+
+    <aside class="sidebar">
+        <div style="font-size: 1.2rem; font-weight: 700; color: var(--gold-primary); margin-bottom: 30px; letter-spacing: 1px;">
+            <i class="fa-solid fa-cube"></i> ORObOT
+        </div>
+        <div style="color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; margin-bottom: 10px; font-weight:600;">History</div>
+        <div style="font-size: 0.9rem; color: var(--text-muted); cursor: pointer;"><i class="fa-regular fa-message"></i> Recent Session</div>
+    </aside>
+
+    <main class="main-area">
+        <div class="chat-window" id="chatWindow">
+            {% if speech_text %}
+                <div class="message user">
+                    <div class="msg-bubble">{{ speech_text }}</div>
+                </div>
+                <div class="message ai">
+                    <div style="color:var(--gold-primary); padding-top: 5px;"><i class="fa-solid fa-cube"></i></div>
+                    <div class="msg-bubble">{{ answer }}</div>
+                </div>
+            {% else %}
+                <div style="text-align: center; margin-top: 20vh; opacity: 0.5;">
+                    <i class="fa-solid fa-cube" style="font-size: 3rem; color: var(--gold-primary);"></i>
+                    <h2 style="margin-top: 20px; font-weight: 300; letter-spacing: 2px;">Awaiting Command...</h2>
+                </div>
+            {% endif %}
+        </div>
+
+                <div class="input-area">
+            <div class="input-wrapper">
+                <form action="/listen" method="POST" id="micForm">
+                    <input type="hidden" name="language" id="micLanguage" value="{{ language or 'en' }}">
+                    <button type="button" id="micBtn" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size: 1.2rem;">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </form>
+                <form action="/send" method="POST" style="flex:1; display:flex; align-items:center; gap:10px;">
+                    <input type="text" name="command" class="input-box" placeholder="Consult ORObOT..." required autocomplete="off">
+
+                    <select name="language" id="languageSelect" style="background:#1a1a1d; color:#ececec; border:1px solid var(--border-subtle); border-radius:8px; padding:7px 8px;">
+                        <option value="en" {% if (language or 'en') == 'en' %}selected{% endif %}>EN</option>
+                        <option value="hi" {% if language == 'hi' %}selected{% endif %}>HI</option>
+                        <option value="es" {% if language == 'sp' %}selected{% endif %}>SP</option>
+                        <option value="fr" {% if language == 'fr' %}selected{% endif %}>FR</option>
+                    </select>
+
+                    <button type="submit" style="background:var(--gold-primary); border:none; width: 35px; height: 35px; border-radius: 8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                        <i class="fa-solid fa-paper-plane" style="color: black;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div class="listening-overlay" id="listeningOverlay">
+        <h2 id="statusText" style="color: var(--gold-primary); letter-spacing: 5px;">LISTENING...</h2>
+    </div>
+
+    <script>
+
+        const landingWrapper = document.getElementById('landing-wrapper');
 
 
+        if (sessionStorage.getItem('appInitialized') === 'true') {
+            landingWrapper.style.display = 'none';
+        }
+
+        function startApp() {
+
+            sessionStorage.setItem('appInitialized', 'true');
+
+
+            let zoom = setInterval(() => {
+                camera.position.z -= 0.5;
+                if(camera.position.z <= 5) clearInterval(zoom);
+            }, 10);
+
+            landingWrapper.style.opacity = '0';
+            setTimeout(() => {
+                landingWrapper.style.display = 'none';
+            }, 1000);
+        }
+
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('solar-canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const sun = new THREE.Mesh(
+            new THREE.SphereGeometry(2, 32, 32),
+            new THREE.MeshBasicMaterial({ color: 0xFFD437 })
+        );
+        scene.add(sun);
+
+        const createPlanet = (size, color, dist, speed) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), new THREE.MeshStandardMaterial({ color }));
+            const pivot = new THREE.Object3D();
+            pivot.add(mesh);
+            scene.add(pivot);
+            mesh.position.x = dist;
+            return { pivot, speed };
+        };
+
+        const planets = [
+            createPlanet(0.4, 0x888888, 5, 0.02),
+            createPlanet(0.7, 0xe3bb76, 8, 0.015),
+            createPlanet(0.8, 0x2233ff, 11, 0.01),
+            createPlanet(0.6, 0xff3300, 14, 0.008)
+        ];
+
+        scene.add(new THREE.PointLight(0xffffff, 2, 100));
+        scene.add(new THREE.AmbientLight(0x222222));
+
+        const starGeom = new THREE.BufferGeometry();
+        const starVertices = [];
+        for(let i=0; i<3000; i++) {
+            starVertices.push(THREE.MathUtils.randFloatSpread(1000), THREE.MathUtils.randFloatSpread(1000), THREE.MathUtils.randFloatSpread(1000));
+        }
+        starGeom.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        scene.add(new THREE.Points(starGeom, new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 })));
+
+        camera.position.set(0, 10, 25);
+        camera.lookAt(0,0,0);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            planets.forEach(p => p.pivot.rotation.y += p.speed);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- UI LOGIC ---
+        const micBtn = document.getElementById('micBtn');
+        const overlay = document.getElementById('listeningOverlay');
+        const languageSelect = document.getElementById('languageSelect');
+        const micLanguage = document.getElementById('micLanguage');
+
+        if (languageSelect && micLanguage) {
+            micLanguage.value = languageSelect.value;
+            languageSelect.addEventListener('change', () => {
+                micLanguage.value = languageSelect.value;
+            });
+        }
+
+        micBtn.addEventListener('click', () => {
+            overlay.style.display = 'flex';
+            setTimeout(() => document.getElementById('micForm').submit(), 500);
+        });
+
+        // Auto-scroll to bottom
+        const chatWindow = document.getElementById('chatWindow');
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>

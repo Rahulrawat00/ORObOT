@@ -1,5 +1,17 @@
 whatsapp_profile/
+email_profile/
+linkedin_profile/
+vision_captures/
+__pycache__/
+*.pyc
 *.crx
 *.cache
 *.db
 *.log
+*.mp3
+*.wav
+contacts.json
+credentials.json
+smtp_config.json
+google_token.json
+rag_index.json
