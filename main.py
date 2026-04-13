@@ -7,11 +7,34 @@ import re
 import requests
 import os
 # ========= VOICE =========
-import sounddevice
-from scipy.io.wavfile import write
-import assemblyai
-import pyttsx3
-import pyautogui
+try:
+    import sounddevice
+    from scipy.io.wavfile import write
+    SOUNDDEVICE_AVAILABLE = True
+    SOUNDDEVICE_IMPORT_ERROR = ""
+except Exception as ex:
+    sounddevice = None
+    write = None
+    SOUNDDEVICE_AVAILABLE = False
+    SOUNDDEVICE_IMPORT_ERROR = str(ex)
+try:
+    import assemblyai
+    ASSEMBLYAI_AVAILABLE = True
+except Exception:
+    assemblyai = None
+    ASSEMBLYAI_AVAILABLE = False
+try:
+    import pyttsx3
+    PYTTSX3_AVAILABLE = True
+except Exception:
+    pyttsx3 = None
+    PYTTSX3_AVAILABLE = False
+try:
+    import pyautogui
+    PYAUTOGUI_AVAILABLE = True
+except Exception:
+    pyautogui = None
+    PYAUTOGUI_AVAILABLE = False
 
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
@@ -24,7 +47,8 @@ from database import SessionLocal, Base, engine
 from models import Chat_history
 
 
-assemblyai.settings.api_key = "170d28750c664fa38b3dd3d0034e4f9b"
+if ASSEMBLYAI_AVAILABLE:
+    assemblyai.settings.api_key = "170d28750c664fa38b3dd3d0034e4f9b"
 app = FastAPI()
 calculator_open = False
 templates = Jinja2Templates(directory="templates")
@@ -36,17 +60,26 @@ last_contact = None
 
 
 def speak(text: str):
-    engine = pyttsx3.init()
-    voices = engine.getProperty('voices')
-    if voices:
-        engine.setProperty('voice', voices[0].id)  
-    engine.setProperty("rate", 200)  
-    engine.setProperty("volume", 1.0)  
-    engine.say(text)
-    engine.runAndWait()
+    if not PYTTSX3_AVAILABLE:
+        return
+    try:
+        engine = pyttsx3.init()
+        voices = engine.getProperty('voices')
+        if voices:
+            engine.setProperty('voice', voices[0].id)
+        engine.setProperty("rate", 200)
+        engine.setProperty("volume", 1.0)
+        engine.say(text)
+        engine.runAndWait()
+    except Exception as ex:
+        print(f"Text-to-speech unavailable: {ex}")
 
 
 def listen_voice():
+    if not SOUNDDEVICE_AVAILABLE:
+        raise RuntimeError(f"Voice input is unavailable: {SOUNDDEVICE_IMPORT_ERROR}")
+    if not ASSEMBLYAI_AVAILABLE:
+        raise RuntimeError("Voice transcription is unavailable: assemblyai is not installed")
     fs = 16000
     seconds = 5
 
@@ -284,6 +317,22 @@ def send_text(request: Request, command: str = Form(...)):
 @app.post("/listen", response_class=HTMLResponse)
 def listen(request: Request):
     global pending_whatsapp
+    if not SOUNDDEVICE_AVAILABLE or not ASSEMBLYAI_AVAILABLE:
+        answer = (
+            "Voice input is not available on this deployed server. "
+            "Please type your command instead."
+        )
+        if SOUNDDEVICE_IMPORT_ERROR:
+            print(f"Voice input disabled: {SOUNDDEVICE_IMPORT_ERROR}")
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "speech_text": "",
+                "answer": answer,
+            }
+        )
+
     fs = 16000
     s = 5
 
