@@ -15,6 +15,7 @@ import socket
 import subprocess
 import base64
 import traceback
+from html import escape
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -4692,9 +4693,10 @@ def handle_input(text: str):
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     history = recentChats(30)
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "language": "en", "history": history}
+    return _render_index(
+        request,
+        language="en",
+        history=history,
     )
 
 
@@ -4729,15 +4731,12 @@ def send_text(request: Request, command: str = Form(...), language: str = Form("
         daemon=True
     ).start()
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "speech_text": text,
-            "answer": answer,
-            "language": language,
-            "history":history
-        }
+    return _render_index(
+        request,
+        speech_text=text,
+        answer=answer,
+        language=language,
+        history=history,
     )
 
 
@@ -4754,15 +4753,12 @@ def listen(request: Request, language: str = Form("en")):
         )
         if SOUNDDEVICE_IMPORT_ERROR:
             print(f"Voice input disabled: {SOUNDDEVICE_IMPORT_ERROR}")
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "speech_text": "",
-                "answer": answer,
-                "language": language,
-                "history": history,
-            }
+        return _render_index(
+            request,
+            speech_text="",
+            answer=answer,
+            language=language,
+            history=history,
         )
 
     fs = 16000
@@ -4817,15 +4813,12 @@ def listen(request: Request, language: str = Form("en")):
         daemon=True
     ).start()
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "speech_text": user_text,
-            "answer": answer,
-            "language": language,
-            "history":history
-        }
+    return _render_index(
+        request,
+        speech_text=user_text,
+        answer=answer,
+        language=language,
+        history=history,
     )
 
 def recentChats(limit: int =20):
@@ -4845,3 +4838,51 @@ def recentChats(limit: int =20):
         return []
     finally:
         db.close()
+
+
+def _render_index(request: Request, **context):
+    payload = {"request": request, **context}
+    try:
+        return templates.TemplateResponse("index.html", payload)
+    except Exception:
+        traceback.print_exc()
+        speech_text = escape(str(payload.get("speech_text", "") or ""))
+        answer = escape(str(payload.get("answer", "") or ""))
+        language = escape(str(payload.get("language", "en") or "en"))
+        fallback_html = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORObOT</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; }}
+        input, select, button {{ padding: 10px; font-size: 16px; }}
+        input {{ width: 100%; margin-bottom: 12px; }}
+        .row {{ display: flex; gap: 10px; align-items: center; }}
+        .card {{ border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px; }}
+    </style>
+</head>
+<body>
+    <h1>ORObOT</h1>
+    <p>Fallback UI is active because the full homepage could not be rendered on this server.</p>
+    <form action="/send" method="POST">
+        <input type="text" name="command" placeholder="Type a command..." required>
+        <div class="row">
+            <select name="language">
+                <option value="en" {"selected" if language == "en" else ""}>EN</option>
+                <option value="hi" {"selected" if language == "hi" else ""}>HI</option>
+                <option value="sp" {"selected" if language == "sp" else ""}>SP</option>
+                <option value="fr" {"selected" if language == "fr" else ""}>FR</option>
+            </select>
+            <button type="submit">Send</button>
+        </div>
+    </form>
+    <div class="card"><strong>You:</strong> {speech_text or "No message yet."}</div>
+    <div class="card"><strong>ORObOT:</strong> {answer or "Ready."}</div>
+    <p><a href="/health">Health check</a></p>
+</body>
+</html>
+"""
+        return HTMLResponse(fallback_html, status_code=200)
