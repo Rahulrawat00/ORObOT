@@ -350,17 +350,27 @@ Question:
 
 Short answer:
 """
-    res = _OLLAMA_SESSION.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "llama3",
-            "prompt": prompt,
-            "stream": False,
-            "options": _OLLAMA_OPTIONS
-        },
-        timeout=(5, 60)
-    )
-    return res.json()["response"]
+    try:
+        res = _OLLAMA_SESSION.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "llama3",
+                "prompt": prompt,
+                "stream": False,
+                "options": _OLLAMA_OPTIONS
+            },
+            timeout=(5, 60)
+        )
+        res.raise_for_status()
+        data = res.json()
+        return data.get("response", "").strip() or (
+            "The AI model returned an empty response."
+        )
+    except requests.RequestException:
+        return (
+            "This hosted deployment cannot reach the local Ollama server. "
+            "Run Ollama on the same machine or switch this app to a cloud LLM API."
+        )
 
 
 def _ensure_vision_dir():
