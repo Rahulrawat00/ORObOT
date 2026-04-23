@@ -14,6 +14,7 @@ import smtplib
 import socket
 import subprocess
 import base64
+import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -4839,5 +4840,8 @@ def recentChats(limit: int =20):
         )
         rows.reverse()
         return rows
+    except Exception:
+        traceback.print_exc()
+        return []
     finally:
         db.close()
