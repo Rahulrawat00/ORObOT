@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import requests
+from llm_client import generate_embedding, generate_text
 
 
 SUPPORTED_EXTENSIONS = {
@@ -112,18 +113,10 @@ class PersonalRAG:
         return vec
 
     def _embed_text(self, text: str) -> List[float]:
-        payload = {"model": self.embed_model, "prompt": text}
         try:
-            res = self.http.post(
-                "http://localhost:11434/api/embeddings",
-                json=payload,
-                timeout=(5, 60),
-            )
-            if res.ok:
-                data = res.json()
-                emb = data.get("embedding")
-                if isinstance(emb, list) and emb:
-                    return emb
+            emb = generate_embedding(text, ollama_model=self.embed_model)
+            if emb:
+                return emb
         except Exception:
             pass
         return self._deterministic_fallback_embedding(text)
@@ -427,22 +420,17 @@ class PersonalRAG:
             "Return answer with short inline citations like [1], [2]."
         )
         try:
-            res = self.http.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": self.llm_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.1,
-                        "num_predict": 180,
-                    },
+            return generate_text(
+                prompt,
+                temperature=0.1,
+                max_tokens=220,
+                ollama_model=self.llm_model,
+                ollama_options={
+                    "temperature": 0.1,
+                    "num_predict": 180,
                 },
-                timeout=(5, 90),
+                timeout=(8, 90),
             )
-            if res.ok:
-                data = res.json()
-                return (data.get("response") or "").strip()
         except Exception:
             pass
         if not matches:

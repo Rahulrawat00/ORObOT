@@ -22,6 +22,7 @@ from typing import Optional
 from urllib.parse import quote_plus
 from email.message import EmailMessage
 from rag_service import PersonalRAG
+from llm_client import cloud_llm_configured, generate_text, llm_backend_name
 
 try:
     from google.auth.transport.requests import Request as GoogleAuthRequest
@@ -92,7 +93,7 @@ from models import Chat_history
 
 
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY", "").strip()
-APP_DEPLOY_VERSION = "2026-04-23-3"
+APP_DEPLOY_VERSION = "2026-04-23-4"
 
 if ASSEMBLYAI_AVAILABLE and ASSEMBLYAI_API_KEY:
     assemblyai.settings.api_key = ASSEMBLYAI_API_KEY
@@ -266,17 +267,14 @@ def _translate_text(text: str, language_code: str):
     )
 
     try:
-        res = _OLLAMA_SESSION.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "llama3",
-                "prompt": prompt,
-                "stream": False,
-                "options": _OLLAMA_OPTIONS,
-            },
-            timeout=(5, 45),
+        translated = generate_text(
+            prompt,
+            temperature=0.1,
+            max_tokens=220,
+            ollama_model="llama3",
+            ollama_options=_OLLAMA_OPTIONS,
+            timeout=(8, 45),
         )
-        translated = (res.json().get("response") or "").strip()
         return translated or text
     except Exception:
         return text
@@ -345,31 +343,27 @@ RULES:
 
 
 
-Question:
+    Question:
 {question}
 
 Short answer:
 """
     try:
-        res = _OLLAMA_SESSION.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "llama3",
-                "prompt": prompt,
-                "stream": False,
-                "options": _OLLAMA_OPTIONS
-            },
-            timeout=(5, 60)
+        answer = generate_text(
+            prompt,
+            temperature=0.2,
+            max_tokens=220,
+            ollama_model="llama3",
+            ollama_options=_OLLAMA_OPTIONS,
+            timeout=(8, 60),
         )
-        res.raise_for_status()
-        data = res.json()
-        return data.get("response", "").strip() or (
+        return answer or (
             "The AI model returned an empty response."
         )
     except requests.RequestException:
         return (
-            "This hosted deployment cannot reach the local Ollama server. "
-            "Run Ollama on the same machine or switch this app to a cloud LLM API."
+            "No AI backend is reachable. Set OPENAI_API_KEY for the deployed app, "
+            "or run Ollama on the same machine for local use."
         )
 
 
@@ -677,24 +671,18 @@ def _summarize_ocr_text_for_query(query: str, ocr_text: str):
         f"OCR text: {ocr_text[:4000]}"
     )
     try:
-        res = _OLLAMA_SESSION.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "llama3",
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    **_OLLAMA_OPTIONS,
-                    "num_predict": 180,
-                    "temperature": 0.1,
-                },
+        return generate_text(
+            prompt,
+            temperature=0.1,
+            max_tokens=220,
+            ollama_model="llama3",
+            ollama_options={
+                **_OLLAMA_OPTIONS,
+                "num_predict": 180,
+                "temperature": 0.1,
             },
-            timeout=(6, 90),
+            timeout=(8, 90),
         )
-        if res.status_code != 200:
-            return None
-        text = (res.json().get("response") or "").strip()
-        return text or None
     except Exception:
         return None
 
@@ -1255,21 +1243,18 @@ Rules:
 """
 
     try:
-        res = _OLLAMA_SESSION.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "llama3",
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    **_OLLAMA_OPTIONS,
-                    "num_predict": 220,
-                    "temperature": 0.7,
-                },
+        draft = generate_text(
+            prompt,
+            temperature=0.7,
+            max_tokens=260,
+            ollama_model="llama3",
+            ollama_options={
+                **_OLLAMA_OPTIONS,
+                "num_predict": 220,
+                "temperature": 0.7,
             },
-            timeout=(5, 60),
+            timeout=(8, 60),
         )
-        draft = (res.json().get("response") or "").strip()
         if draft:
             return draft
     except Exception:
@@ -4018,21 +4003,18 @@ Hard rules:
 - Keep text concise and readable, not giant paragraphs.
 """
     try:
-        res = _OLLAMA_SESSION.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "llama3",
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    **_OLLAMA_OPTIONS,
-                    "num_predict": 1800,
-                    "temperature": 0.75,
-                },
+        generated = generate_text(
+            prompt,
+            temperature=0.75,
+            max_tokens=2200,
+            ollama_model="llama3",
+            ollama_options={
+                **_OLLAMA_OPTIONS,
+                "num_predict": 1800,
+                "temperature": 0.75,
             },
-            timeout=(5, 120),
+            timeout=(8, 120),
         )
-        generated = (res.json().get("response") or "").strip()
         parsed = _parse_generated_website_blocks(generated)
         if parsed and _looks_like_real_website_output(parsed):
             return parsed
@@ -4717,6 +4699,8 @@ def health():
         "status": "ok",
         "service": "orobot",
         "version": APP_DEPLOY_VERSION,
+        "llm_backend": llm_backend_name(),
+        "cloud_llm_configured": cloud_llm_configured(),
         "assemblyai_configured": bool(ASSEMBLYAI_API_KEY),
         "voice_input_enabled": bool(
             SOUNDDEVICE_AVAILABLE and ASSEMBLYAI_AVAILABLE and ASSEMBLYAI_API_KEY
@@ -4730,6 +4714,8 @@ def diag():
         "status": "ok",
         "service": "orobot",
         "version": APP_DEPLOY_VERSION,
+        "llm_backend": llm_backend_name(),
+        "cloud_llm_configured": cloud_llm_configured(),
         "template_dir": "templates",
         "cwd": os.getcwd(),
     }

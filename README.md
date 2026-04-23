@@ -14,6 +14,8 @@ Open `http://127.0.0.1:8000` and use `http://127.0.0.1:8000/health` for a health
 
 Copy `.env.example` and set the values you need:
 
+- `OPENAI_API_KEY` for cloud LLM answers on hosted deployments
+- `OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_EMBEDDING_MODEL` if you want to override the default OpenAI-compatible settings
 - `ASSEMBLYAI_API_KEY` for speech-to-text
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` for email
 
@@ -33,3 +35,5 @@ This repo includes `render.yaml` and a `Dockerfile`, so you can deploy it as a D
 ## Hosted deployment notes
 
 When deployed to a cloud server, browser automation, microphone access, camera access, local calculator control, and similar desktop-only actions may not work because they require direct access to a user machine. The web UI, chat flow, RAG features, database, and health endpoint remain deployable.
+
+For hosted AI answers, set `OPENAI_API_KEY` in your deployment environment. Without that, the app falls back to local Ollama, which is typically unavailable on cloud platforms like Render.
