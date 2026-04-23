@@ -89,8 +89,10 @@ from database import SessionLocal, Base, engine
 from models import Chat_history
 
 
-if ASSEMBLYAI_AVAILABLE:
-    assemblyai.settings.api_key = "170d28750c664fa38b3dd3d0034e4f9b"
+ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY", "").strip()
+
+if ASSEMBLYAI_AVAILABLE and ASSEMBLYAI_API_KEY:
+    assemblyai.settings.api_key = ASSEMBLYAI_API_KEY
 app = FastAPI()
 calculator_open = False
 templates = Jinja2Templates(directory="templates")
@@ -4693,6 +4695,18 @@ def home(request: Request):
         "index.html",
         {"request": request, "language": "en", "history": history}
     )
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "orobot",
+        "assemblyai_configured": bool(ASSEMBLYAI_API_KEY),
+        "voice_input_enabled": bool(
+            SOUNDDEVICE_AVAILABLE and ASSEMBLYAI_AVAILABLE and ASSEMBLYAI_API_KEY
+        ),
+    }
 
 
 @app.post("/send", response_class=HTMLResponse)
