@@ -92,6 +92,7 @@ from models import Chat_history
 
 
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY", "").strip()
+APP_DEPLOY_VERSION = "2026-04-23-3"
 
 if ASSEMBLYAI_AVAILABLE and ASSEMBLYAI_API_KEY:
     assemblyai.settings.api_key = ASSEMBLYAI_API_KEY
@@ -4705,10 +4706,22 @@ def health():
     return {
         "status": "ok",
         "service": "orobot",
+        "version": APP_DEPLOY_VERSION,
         "assemblyai_configured": bool(ASSEMBLYAI_API_KEY),
         "voice_input_enabled": bool(
             SOUNDDEVICE_AVAILABLE and ASSEMBLYAI_AVAILABLE and ASSEMBLYAI_API_KEY
         ),
+    }
+
+
+@app.get("/diag")
+def diag():
+    return {
+        "status": "ok",
+        "service": "orobot",
+        "version": APP_DEPLOY_VERSION,
+        "template_dir": "templates",
+        "cwd": os.getcwd(),
     }
 
 
